@@ -2,6 +2,7 @@
 Flask API of the SMS Spam detection model model.
 """
 import joblib
+import argparse
 from flask import Flask, jsonify, request
 from flasgger import Swagger
 import pandas as pd
@@ -49,5 +50,10 @@ def predict():
     return jsonify(res)
 
 if __name__ == '__main__':
-    #clf = joblib.load('output/model.joblib')
-    app.run(host="0.0.0.0", port=8081, debug=True)
+    parser = argparse.ArgumentParser(description='SMS Spam Detection Model Service')
+    parser.add_argument('--port', type=int, default=8081, help='Port to run the service on (default: 8081)')
+    args = parser.parse_args()
+    
+    port = args.port
+    print(f"Starting model service on port {port}")
+    app.run(host="0.0.0.0", port=port, debug=True)
