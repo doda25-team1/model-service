@@ -5,6 +5,7 @@ Preprocess the data to be trained by the learning algorithm.
 import pandas as pd
 import numpy as np
 
+import os
 import string
 import nltk
 from nltk.corpus import stopwords
@@ -65,6 +66,9 @@ def _preprocess(messages):
         # append the message length feature to the vector
         FunctionTransformer(_extract_message_len, validate=False)
     )
+
+    # Make sure the "output" directory exists
+    os.makedirs("output", exist_ok=True)
 
     preprocessed_data = preprocessor.fit_transform(messages['message'])
     dump(preprocessor, 'output/preprocessor.joblib')
