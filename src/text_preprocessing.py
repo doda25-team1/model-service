@@ -17,6 +17,11 @@ from sklearn.preprocessing import FunctionTransformer
 from sklearn.pipeline import make_union, make_pipeline
 from joblib import dump, load
 
+# path values
+MODEL_DIR = "output"
+PREPROCESSOR_DIR = os.path.join(MODEL_DIR, 'preprocessor.joblib')
+PREPROCESSED_DATA_DIR = os.path.join(MODEL_DIR, 'preprocessed_data.joblib')
+
 def _load_data():
     messages = pd.read_csv(
         'smsspamcollection/SMSSpamCollection',
@@ -68,15 +73,15 @@ def _preprocess(messages):
     )
 
     # Make sure the "output" directory exists
-    os.makedirs("output", exist_ok=True)
+    os.makedirs(MODEL_DIR, exist_ok=True)
 
     preprocessed_data = preprocessor.fit_transform(messages['message'])
-    dump(preprocessor, 'output/preprocessor.joblib')
-    dump(preprocessed_data, 'output/preprocessed_data.joblib')
+    dump(preprocessor, PREPROCESSOR_DIR)
+    dump(preprocessed_data, PREPROCESSED_DATA_DIR)
     return preprocessed_data
 
 def prepare(message):
-    preprocessor = load('output/preprocessor.joblib')
+    preprocessor = load(PREPROCESSOR_DIR)
     return preprocessor.transform([message])
 
 
