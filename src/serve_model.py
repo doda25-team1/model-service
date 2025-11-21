@@ -3,12 +3,63 @@ Flask API of the SMS Spam detection model model.
 """
 import joblib
 import os
+import requests
 from flask import Flask, jsonify, request
 from flasgger import Swagger
 import pandas as pd
 
 from text_preprocessing import prepare, _extract_message_len, _text_process
 
+
+# ========== Load Training Model ========== #
+
+# load env values
+MODEL_DIR = "output"
+MODEL_VERSION = os.getenv("MODEL_VERSION")
+MODEL_BASE_URL = os.getenv("MODEL_BASE_URL", "")
+
+os.makedirs(MODEL_DIR, exist_ok=True)
+
+if MODEL_VERSION:
+    MODEL_FILENAME = f"model-{MODEL_VERSION}.joblib"
+else:
+    raise RuntimeError(f"MODEL_VERSION not specified.")
+
+MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILENAME)
+PREPROCESSOR_PATH = os.path.join(MODEL_DIR, "preprocessor.joblib")
+
+def _download_file(url, dest):
+    if os.path.exists(dest):
+        return
+    if not url:
+        raise RuntimeError(f"File {dest} not found and no download URL configured.")
+    resp = requests.get(url, timeout=30)
+    resp.raise_for_status()
+    with open(dest, "wb") as f:
+        f.write(resp.content)
+
+def _ensure_model_files():
+    if os.path.exists(MODEL_PATH) and os.path.exists(PREPROCESSOR_PATH):
+        return
+    
+    if not MODEL_VERSION or not MODEL_BASE_URL:
+        raise RuntimeError(
+            "Model files missing and MODEL_VERSION / MODEL_BASE_URL are not set. "
+            "Either mount the files into output/ or configure download url."
+        )
+    
+    tag = f"model-v{MODEL_VERSION}"
+    model_url = f"{MODEL_BASE_URL}/{tag}/{MODEL_FILENAME}"
+    preproc_url = f"{MODEL_BASE_URL}/{tag}/preprocessor.joblib"
+
+    _download_file(model_url, MODEL_PATH)
+    _download_file(preproc_url, PREPROCESSOR_PATH)
+
+# download into /app/output if needed; then load model
+_ensure_model_files()
+model = joblib.load(MODEL_PATH)
+
+# ========== Create App ========== #
 app = Flask(__name__)
 swagger = Swagger(app)
 
@@ -38,7 +89,6 @@ def predict():
     input_data = request.get_json()
     sms = input_data.get('sms')
     processed_sms = prepare(sms)
-    model = joblib.load('output/model.joblib')
     prediction = model.predict(processed_sms)[0]
     
     res = {

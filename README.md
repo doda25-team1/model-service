@@ -41,12 +41,24 @@ The resulting model files will be placed as `.joblib` files in the `output/` fol
 
 ### Serving Recommendations
 
-To make the models accessible, you need to start the microservice by running the `src/serve_model.py` script from within the virtual environment that you created before, or in a fresh Docker container (recommended):
+To make the models accessible, you need to start the microservice by running the `src/serve_model.py` script from within the virtual environment that you created before, or in a fresh Docker container (recommended).
 
-    $ docker run -it --rm -p 8081:8081 -v ./:/root/sms/ python:3.12.9-slim bash
+The following environment variables are expected:
+- `MODEL_VERSION` - which model version to use (e.g. `0.0.1`, must match a GitHub release created by the training workflow)
+- `MODEL_BASE_URL` - base URL of the releases (e.g. `https://github.com/doda25-team1/model-service/releases/download`)
+
+How to run in a Docker container (recommended):
+
+    $ docker run -it --rm \
+        -p 8081:8081 \
+        -e MODEL_VERSION=0.0.1 \
+        -e MODEL_BASE_URL=https://github.com/doda25-team1/model-service/releases/download \
+        -v ./:/root/sms/ \
+        python:3.12.9-slim bash
     ... (container startup)
     $ cd /root/sms/
     $ pip install -r requirements.txt
+    $ mkdir -p output
     $ python src/serve_model.py
 
 The server will start on port 8081.
@@ -60,5 +72,4 @@ Once its startup has finished, you can either access [localhost:8081/apidocs](ht
       "sms": "test ..."
     }
 
-
-
+> The model files are not baked into the image. Instead, the container uses a mounted directory as a local cache and will download the specified model into it if needed.
